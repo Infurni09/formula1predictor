@@ -1,17 +1,55 @@
-version: "3.9"
+version: '3.9'
+
 services:
+  # FastAPI prediction API
   api:
     build: .
+    container_name: formula1-ai-api
     ports:
       - "8000:8000"
+    environment:
+      - DEBUG=false
+      - PYTHONUNBUFFERED=1
+      - MLFLOW_TRACKING_URI=mlruns
     volumes:
       - ./data:/app/data
       - ./models:/app/models
+      - ./mlruns:/app/mlruns
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Dash dashboard
   dashboard:
     build: .
-    command: python dashboards/app.py
+    container_name: formula1-ai-dashboard
     ports:
       - "8050:8050"
+    command: python dashboards/app.py
+    depends_on:
+      - api
     volumes:
       - ./data:/app/data
       - ./models:/app/models
+    restart: unless-stopped
+
+  # MLflow experiment tracking UI
+  mlflow:
+    image: python:3.12-slim
+    container_name: formula1-ai-mlflow
+    ports:
+      - "5000:5000"
+    command: >
+      bash -c "pip install mlflow -q &&
+               mlflow ui --host 0.0.0.0 --port 5000 --backend-store-uri /mlruns"
+    volumes:
+      - ./mlruns:/mlruns
+    restart: unless-stopped
+
+volumes:
+  data:
+  models:
+  mlruns:

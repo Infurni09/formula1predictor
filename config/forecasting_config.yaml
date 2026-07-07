@@ -1,0 +1,36 @@
+# Formula1-AI — Forecasting Configuration
+# config/forecasting_config.yaml
+
+forecasting:
+  arima:
+    order: [2, 1, 2]
+    seasonal_order: [1, 1, 1, 22]
+    enforce_stationarity: true
+
+  prophet:
+    yearly_seasonality: false
+    weekly_seasonality: false
+    daily_seasonality: false
+    changepoint_prior_scale: 0.05
+    seasonality_prior_scale: 10.0
+
+  walk_forward:
+    min_train_seasons: 1
+    step_size: 1
+    gap_seasons: 0
+    metrics: [mae, rmse, mape]
+
+  tire_degradation:
+    model: polynomial_regression
+    degree: 2
+    stint_min_laps: 5
+
+  track_evolution:
+    decompose: true
+    trend_window: 10
+    seasonal_period: 22
+
+  validation:
+    window_size: 50
+    step_size: 10
+    coverage_alpha: 0.95

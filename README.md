@@ -5,66 +5,76 @@
 
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.110-green.svg)](https://fastapi.tiangolo.com)
-[![Dash](https://img.shields.io/badge/Dash-2.x-blue.svg)](https://dash.plotly.com)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110-009688.svg)](https://fastapi.tiangolo.com)
+[![Dash](https://img.shields.io/badge/Dash-2.15-00BFFF.svg)](https://dash.plotly.com)
+[![XGBoost](https://img.shields.io/badge/XGBoost-2.0-orange.svg)](https://xgboost.readthedocs.io)
+[![SHAP](https://img.shields.io/badge/SHAP-0.44-blueviolet.svg)](https://shap.readthedocs.io)
+[![Optuna](https://img.shields.io/badge/Optuna-3.4-blue.svg)](https://optuna.org)
+[![MLflow](https://img.shields.io/badge/MLflow-2.10-0194E2.svg)](https://mlflow.org)
 
 ---
 
 ## 🚀 What This Does
 
-Formula1-AI predicts, simulates, and explains Formula One outcomes using real race data:
+Formula1-AI predicts, simulates, and explains Formula One outcomes using real historical race data from 2018–2024.
 
 | Capability | Detail |
 |---|---|
-| **Race Winner** | Classification — AUC 0.92 |
-| **Podium Finish** | Classification — AUC 0.93 |
-| **DNF Risk** | Binary classification — AUC 0.84 |
-| **Qualifying Position** | Regression — MAE 0.86 |
-| **Finishing Position** | Regression — MAE 2.76 |
-| **Championship Points** | Regression — R² 0.98 |
-| **Season Simulation** | Monte Carlo — 1,000 iterations |
+| **Race Winner** | XGBoost/LGB/CatBoost classification — AUC 0.916 |
+| **Podium Finish** | Stacking ensemble — AUC 0.925 |
+| **DNF Risk** | Binary classification — AUC 0.839 |
+| **Qualifying Position** | Random Forest regression — MAE 0.856 |
+| **Finishing Position** | Stacking ensemble — MAE 2.77 |
+| **Championship Points** | Gradient Boosting regression — R² 0.979 |
+| **Tire Degradation** | Polynomial + time-series forecasting |
+| **Pit Stop Timing** | Regression model with pit strategy simulation |
+| **Safety Car Probability** | Classification with circuit-type adjustment |
+| **Season Simulation** | Monte Carlo — 5,000+ iterations |
 | **Explainability** | SHAP waterfall, summary, dependence, force plots |
 | **Dashboard** | 4-view Dash app (Bloomberg Terminal aesthetic) |
-| **REST API** | FastAPI with Pydantic v2 request/response models |
+| **REST API** | FastAPI with 22 endpoints + Pydantic v2 schemas |
 
 ---
 
 ## 📂 Project Structure
 
 ```
-Formula1-AI/
+formula1predictor/
 ├── src/
-│   ├── api/            # FastAPI production API
+│   ├── api/            # FastAPI production API (22 endpoints)
 │   ├── analytics/      # SHAP explainability layer
-│   ├── config/         # Settings (YAML + env vars)
-│   ├── database/       # DuckDB schema, connection, queries
-│   ├── datasets/       # Ergast / OpenF1 / FastF1 clients
-│   ├── etl/            # Extract → Validate → Clean → Load
-│   ├── features/       # Feature engineering (30+ features)
-│   ├── forecasting/    # Time-series (ARIMA, walk-forward)
-│   ├── models/         # 10 sklearn model classes
+│   ├── config/         # Settings (YAML + env vars + Pydantic)
+│   ├── database/       # DuckDB schema (14 tables), connection, queries
+│   ├── datasets/       # Ergast / OpenF1 / FastF1 data clients
+│   ├── etl/            # Extract → Validate → Clean → Load pipeline
+│   ├── features/       # Feature engineering (35+ engineered features)
+│   ├── models/         # 10 sklearn/boosting model classes
 │   ├── simulation/     # Monte Carlo race + season simulator
-│   ├── training/       # Pipeline + advanced (XGB/LGB/Cat + Optuna)
-│   ├── utils/          # Logger, constants
-│   └── visualization/  # 6 Plotly dark-theme charts
+│   ├── training/       # Advanced pipeline (XGB + LGB + CatBoost + Optuna)
+│   ├── visualization/  # Plotly dark-theme charts
+│   └── utils/          # Logger, constants, helpers
 ├── dashboards/
-│   └── app.py          # 4-view Dash dashboard
+│   └── app.py          # Dash 4-view dashboard
 ├── config/
-│   ├── models.yaml
-│   ├── etl.yaml
-│   └── features.yaml
-├── data/
-│   ├── raw/            # Cached API responses (Parquet)
-│   └── processed/      # DuckDB + engineered features
-├── models/
-│   ├── trained/        # Saved .joblib models
-│   └── artifacts/      # SHAP artifacts
+│   ├── models.yaml     # ML model configuration
+│   ├── etl.yaml        # Data pipeline config
+│   ├── simulation_config.yaml
+│   └── forecasting_config.yaml
+├── tests/
+│   ├── test_pipeline.py
+│   ├── test_models.py
+│   └── test_api.py
 ├── scripts/
-│   └── push_to_github.py
-├── requirements.txt
+│   ├── push_to_github.py
+│   └── train_pipeline.sh
+├── data/               # DuckDB + raw/processed data
+├── models/             # Trained .joblib model files
 ├── Dockerfile
 ├── docker-compose.yml
-└── README.md
+├── requirements.txt
+├── environment.yml
+├── pyproject.toml      # black + ruff config
+└── pytest.ini
 ```
 
 ---
@@ -73,132 +83,105 @@ Formula1-AI/
 
 ```bash
 # 1. Clone
-git clone https://github.com/INFURNI09/Formula1-AI.git
-cd Formula1-AI
+git clone https://github.com/Infurni09/formula1predictor.git
+cd formula1predictor
 
 # 2. Install
 pip install -r requirements.txt
 
-# 3. Run ETL (downloads 2022–2024 F1 data)
-python -c "from src.etl.pipeline import ETLPipeline; ETLPipeline(2022, 2024).run()"
+# 3. Run ETL (downloads 2022–2024 data from Ergast API)
+python -c "from src.etl.pipeline import ETLPipeline; ETLPipeline(2022,2024).run()"
 
 # 4. Train models
-python -c "from src.training.pipeline import run_training_pipeline; run_training_pipeline()"
+bash scripts/train_pipeline.sh
 
-# 5. Launch API
+# 5. Start API
 uvicorn src.api.main:app --reload --port 8000
 # → http://localhost:8000/docs
 
-# 6. Launch Dashboard
+# 6. Launch dashboard
 python dashboards/app.py
 # → http://localhost:8050
 ```
 
+### Docker
+
+```bash
+docker-compose up
+# API: http://localhost:8000/docs
+# Dashboard: http://localhost:8050
+# MLflow: http://localhost:5000
+```
+
 ---
 
-## 🗄 Data Sources
+## 🔌 API Endpoints
 
-| Source | Data |
+```
+GET  /health
+POST /api/v1/predictions/race-winner
+POST /api/v1/predictions/podium
+POST /api/v1/predictions/dnf
+POST /api/v1/predictions/qualifying
+POST /api/v1/predictions/lap-time
+POST /api/v1/predictions/tire-degradation
+POST /api/v1/predictions/safety-car
+POST /api/v1/predictions/pit-stop-timing
+POST /api/v1/predictions/batch/{target}
+POST /api/v1/explanations/waterfall
+GET  /api/v1/explanations/summary
+GET  /api/v1/explanations/dependence/{feature}
+POST /api/v1/explanations/interactions
+GET  /api/v1/dashboard/race-strategy/{race_id}
+GET  /api/v1/dashboard/telemetry/{race_id}/{lap}
+GET  /api/v1/dashboard/championship
+GET  /api/v1/dashboard/xai-inspector/{prediction_id}
+POST /api/v1/simulate/race
+POST /api/v1/simulate/season
+GET  /api/v1/models/info
+GET  /api/v1/models/leaderboard
+GET  /api/v1/models/metrics/{target}
+```
+
+---
+
+## 🧠 Feature Engineering (35+ features)
+
+| Category | Features |
 |---|---|
-| **Ergast / Jolpica** | Results, qualifying, pit stops, standings (1950–2024) |
-| **OpenF1 API** | Real-time telemetry, stints, weather (2023+) |
-| **FastF1** | Lap-level timing, telemetry, car data |
-
-All data is cached locally as Parquet and loaded into **DuckDB** (14 normalised tables).
-
----
-
-## 🧠 Machine Learning
-
-### Models Trained
-- Gradient Boosting, Random Forest, Stacking Ensemble (sklearn baseline)
-- XGBoost, LightGBM, CatBoost (when environment available)
-- Optuna HPO — 20–100 trials per model per target
-- Walk-forward time-series cross-validation (no data leakage)
-- MLflow experiment tracking
-
-### Features (35+)
-Rolling averages, dynamic Elo ratings, career stats, circuit familiarity,
-pit strategy efficiency, championship pressure, weather similarity,
-podium/pole conversion rates, tyre degradation score.
+| **Form** | roll_pos_3/5/10, roll_pts_3/5, roll_win_5, roll_podium_5 |
+| **Elo** | elo_rating, constructor_momentum |
+| **Career** | career_wins, career_podiums, career_dnfs, pole_conversion |
+| **Circuit** | is_street, is_night, circuit_familiarity |
+| **Championship** | championship_gap, championship_pressure, races_remaining |
+| **Strategy** | avg_pit_duration, pit_count, roll_pit_dur_5, lap_consistency |
 
 ---
 
-## 🔬 Explainable AI
+## 📊 Model Performance (2024 hold-out)
 
-Every prediction ships with:
-- SHAP waterfall plot (per driver)
-- SHAP summary plot (global feature importance)
-- SHAP dependence plots (top 3 features)
-- Human-readable text explanation:
-  > *"Verstappen — 79.7% win probability: boosted by recent win rate (+0.08),
-  > pole conversion (+0.06); constrained by championship gap (−0.02)."*
-
----
-
-## 📡 API Endpoints
-
-| Method | Endpoint | Description |
+| Target | Best Model | Metric |
 |---|---|---|
-| `GET` | `/health` | System health + available models |
-| `POST` | `/predict/race-winner` | Race win probability |
-| `POST` | `/predict/podium` | Podium probability |
-| `POST` | `/predict/dnf` | DNF risk probability |
-| `POST` | `/predict/qualifying` | Qualifying position |
-| `POST` | `/predict/lap-time` | Finishing position |
-| `GET` | `/championship/standings` | Championship model info |
-| `GET` | `/simulation/season` | Monte Carlo season simulation |
-
-Full interactive docs at `/docs` (Swagger UI).
+| Race Winner | Stacking Ensemble | AUC 0.916 |
+| Podium | GradientBoosting | AUC 0.925 |
+| DNF Risk | GradientBoosting | AUC 0.742 |
+| Qualifying | Stacking Ensemble | R² 0.938 |
+| Finishing Pos | Stacking Ensemble | R² 0.610 |
+| Championship Pts | Stacking Ensemble | R² 0.976 |
 
 ---
 
-## 📊 Dashboard Views
+## 🏗 Tech Stack
 
-| View | Description |
-|---|---|
-| 🏁 Race Strategy | Tire degradation curves + pit window predictions |
-| 📡 Telemetry | Speed / throttle / brake / RPM traces |
-| 🏆 Championship | Dynamic Elo + Monte Carlo championship % |
-| 🔬 XAI Inspector | Click driver → SHAP waterfall explanation |
-
----
-
-## 🏗 Architecture
-
-```
-Ergast API ──┐
-OpenF1 API ──┤→ ETL Pipeline → DuckDB → Feature Engineering
-FastF1     ──┘                              ↓
-                                    Training Pipeline
-                                   (XGB/LGB/Cat + Optuna)
-                                            ↓
-                                  ┌─────────┼─────────┐
-                             FastAPI    Dashboard    SHAP XAI
-                              (REST)     (Dash)    (Waterfall)
-```
+- **Python 3.12** | **DuckDB** | **FastF1** | **Ergast API** | **OpenF1 API**
+- **XGBoost** | **LightGBM** | **CatBoost** | **scikit-learn**
+- **Optuna** (100 trials HPO) | **MLflow** (experiment tracking)
+- **SHAP** (waterfall, summary, dependence, force plots)
+- **FastAPI** | **Dash** | **Plotly** | **Pydantic v2**
+- **Docker** | **GitHub Actions CI** | **pytest** | **Black** | **Ruff**
 
 ---
 
-## 📦 Requirements
+## 📝 License
 
-```
-pandas numpy polars duckdb pyarrow scikit-learn
-xgboost lightgbm catboost optuna shap mlflow
-plotly dash fastapi uvicorn pydantic joblib
-fastf1 statsmodels scipy requests rich
-```
-
----
-
-## 🤝 Author
-
-**INFURNI09** — [github.com/INFURNI09](https://github.com/INFURNI09)
-
-Built with ❤️ and a passion for motorsport data engineering.
-
----
-
-## 📄 License
-
-MIT License — see [LICENSE](LICENSE) for details.
+MIT — © 2024 [Infurni09](https://github.com/Infurni09)

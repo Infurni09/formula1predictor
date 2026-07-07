@@ -1,294 +1,68 @@
 # Formula1-AI — Model Configuration
-# ====================================
-# Defines hyperparameters, feature sets, and training settings for all ML targets.
-
-defaults:
-  random_state: 42
-  cv_folds: 5
-  test_season_cutoff: 2022
-  validation_season_cutoff: 2020
+# config/models.yaml
 
 models:
+  random_state: 42
+  test_season: 2024
+  validation_seasons: [2023]
+  train_seasons: [2018, 2019, 2020, 2021, 2022, 2023]
 
-  # ---------- TARGET 1: Race Winner Classifier ----------
-  race_winner_classifier:
-    type: lightgbm_classifier
-    target: is_winner          # Binary: 1 if P1
-    input_features:
-      - driver_elo
-      - constructor_elo
-      - qualifying_position
-      - rolling_avg_finish_5
-      - rolling_avg_finish_10
-      - track_type_perf_street
-      - track_type_perf_permanent
-      - wet_weather_elo
-      - circuit_familiarity
-      - championship_gap
-      - remaining_races
-      - championship_pressure
-      - recent_form_5
-      - pole_conversion_rate
-      - constructor_momentum
-    class_weight: balanced
-    hyperparameters:
-      num_leaves: 63
-      learning_rate: 0.05
-      n_estimators: 500
-      min_child_samples: 20
-      subsample: 0.8
-      colsample_bytree: 0.8
-      reg_alpha: 0.1
-      reg_lambda: 1.0
-    optuna:
-      n_trials: 100
-      timeout: 3600
-      sampler: TPESampler
-      pruner: HyperbandPruner
-      search_space:
-        num_leaves: [15, 127]
-        learning_rate: [0.005, 0.3]
-        n_estimators: [100, 1000]
-        min_child_samples: [5, 50]
-        subsample: [0.5, 1.0]
-        colsample_bytree: [0.5, 1.0]
-        reg_alpha: [0.0, 5.0]
-        reg_lambda: [0.0, 5.0]
-    training:
-      cv_strategy: walk_forward
-      metric: log_loss
-      early_stopping_rounds: 50
-
-  # ---------- TARGET 2: Podium Classifier ----------
-  podium_classifier:
-    type: xgboost_classifier
-    target: is_podium          # Binary: 1 if P1-P3
-    input_features:
-      - driver_elo
-      - constructor_elo
-      - qualifying_position
-      - rolling_avg_finish_3
-      - rolling_avg_finish_5
-      - rolling_avg_finish_10
-      - avg_gain_from_qualifying
-      - pace_differential
-      - constructor_pit_efficiency
-      - recent_form_5
-      - podium_conversion_rate
-      - wet_weather_elo
-      - track_type_perf_street
-      - championship_pressure
-    class_weight: balanced
-    hyperparameters:
-      max_depth: 6
-      learning_rate: 0.05
-      n_estimators: 500
-      subsample: 0.8
-      colsample_bytree: 0.8
-      reg_alpha: 0.1
-      reg_lambda: 1.0
-      scale_pos_weight: 5.67   # ~3/17 ratio podium/non-podium
-    optuna:
-      n_trials: 100
-      timeout: 3600
-      sampler: TPESampler
-      search_space:
-        max_depth: [3, 10]
-        learning_rate: [0.005, 0.3]
-        n_estimators: [100, 1000]
-        subsample: [0.5, 1.0]
-        colsample_bytree: [0.5, 1.0]
-        reg_alpha: [0.0, 5.0]
-        reg_lambda: [0.0, 5.0]
-    training:
-      cv_strategy: walk_forward
+  targets:
+    winner:
+      col: winner
+      task: classification
       metric: roc_auc
-      early_stopping_rounds: 50
-
-  # ---------- TARGET 3: DNF Risk ----------
-  dnf_risk_classifier:
-    type: xgboost_classifier
-    target: is_dnf             # Binary
-    input_features:
-      - constructor_reliability_score
-      - dnf_history_driver_5
-      - dnf_history_constructor_5
-      - driver_experience_races
-      - circuit_attrition_rate
-      - track_type
-      - street_circuit_flag
-      - grid_position
-      - championship_pressure
-      - constructor_elo
-    class_weight: balanced
-    hyperparameters:
-      max_depth: 5
-      learning_rate: 0.1
-      n_estimators: 300
-      scale_pos_weight: 6.0   # DNFs are ~14% of results
-    optuna:
-      n_trials: 100
-      timeout: 3600
-      sampler: TPESampler
-    training:
-      cv_strategy: walk_forward
-      metric: pr_auc
-      early_stopping_rounds: 30
-
-  # ---------- TARGET 4: Qualifying Position ----------
-  qualifying_position_regressor:
-    type: lightgbm_regressor
-    target: qualifying_position
-    input_features:
-      - driver_elo
-      - constructor_elo
-      - rolling_avg_qualifying_5
-      - recent_form_5
-      - track_type_perf_street
-      - track_type_perf_permanent
-      - circuit_familiarity
-      - constructor_momentum
-      - wet_weather_elo
-      - lap_consistency
-      - historical_pace
-    hyperparameters:
-      num_leaves: 31
-      learning_rate: 0.05
-      n_estimators: 400
-      min_child_samples: 10
-    optuna:
-      n_trials: 100
-      timeout: 3600
-      sampler: TPESampler
-    training:
-      cv_strategy: walk_forward
+    podium:
+      col: podium
+      task: classification
+      metric: roc_auc
+    dnf:
+      col: dnf
+      task: classification
+      metric: roc_auc
+    qualifying_position:
+      col: quali_pos
+      task: regression
+      metric: mae
+    finishing_position:
+      col: position
+      task: regression
+      metric: mae
+    championship_points:
+      col: cumulative_points
+      task: regression
+      metric: r2
+    pit_stop_timing:
+      col: avg_pit_duration
+      task: regression
       metric: mae
 
-  # ---------- TARGET 5: Finishing Position ----------
-  finishing_position_regressor:
-    type: catboost_regressor
-    target: finishing_position
-    input_features:
-      - qualifying_position
-      - driver_elo
-      - constructor_elo
-      - rolling_avg_finish_5
-      - avg_gain_from_qualifying
-      - constructor_pit_efficiency
-      - tyre_degradation_score
-      - wet_weather_elo
-      - circuit_familiarity
-      - dnf_history_driver_5
-      - championship_pressure
-      - recent_form_5
-    hyperparameters:
-      depth: 6
-      learning_rate: 0.05
-      iterations: 500
-    optuna:
-      n_trials: 100
-      timeout: 3600
-      sampler: TPESampler
-    training:
-      cv_strategy: walk_forward
-      metric: rmse
+  optuna:
+    n_trials: 100
+    timeout_seconds: 3600
+    sampler: TPESampler
+    pruner: MedianPruner
+    direction:
+      classification: maximize
+      regression: maximize  # negative MAE
 
-  # ---------- TARGET 6: Lap Time ----------
-  lap_time_regressor:
-    type: lightgbm_regressor
-    target: lap_time_ms
-    input_features:
-      - lap_number
-      - tyre_age
-      - tyre_compound
-      - track_temperature
-      - air_temperature
-      - fuel_load_estimate
-      - driver_elo
-      - constructor_elo
-      - lap_consistency
-      - circuit_id
-      - safety_car_deployed
-    hyperparameters:
-      num_leaves: 63
-      learning_rate: 0.03
-      n_estimators: 600
-    optuna:
-      n_trials: 100
-      timeout: 3600
-    training:
-      cv_strategy: walk_forward
-      metric: mape
+  search_space:
+    max_depth: [3, 12]
+    learning_rate: [0.001, 0.3]
+    n_estimators: [100, 2000]
+    num_leaves: [20, 150]
+    subsample: [0.5, 1.0]
+    colsample_bytree: [0.5, 1.0]
+    min_child_weight: [1, 10]
+    reg_alpha: [1.0e-8, 10.0]
+    reg_lambda: [1.0e-8, 10.0]
 
-  # ---------- TARGET 7: Pit Stop Timing ----------
-  pit_stop_timing_regressor:
-    type: xgboost_regressor
-    target: pit_lap
-    input_features:
-      - tyre_compound
-      - tyre_age
-      - tyre_degradation_score
-      - constructor_pit_efficiency
-      - circuit_pit_window_typical
-      - safety_car_probability
-      - lap_time_trend
-      - driver_elo
-      - grid_position
-    hyperparameters:
-      max_depth: 5
-      learning_rate: 0.08
-      n_estimators: 400
-    optuna:
-      n_trials: 100
-      timeout: 3600
-    training:
-      cv_strategy: walk_forward
-      metric: mae
+  ensemble:
+    stacking_cv: 3
+    voting_weights: auto
 
-  # ---------- TARGET 8: Safety Car Probability ----------
-  safety_car_classifier:
-    type: lightgbm_classifier
-    target: safety_car_deployed
-    input_features:
-      - circuit_id
-      - lap_number
-      - num_cars_running
-      - recent_dnfs
-      - track_temp
-      - rainfall
-      - circuit_attrition_rate
-      - street_circuit_flag
-      - night_race_flag
-    hyperparameters:
-      num_leaves: 31
-      learning_rate: 0.05
-      n_estimators: 300
-    optuna:
-      n_trials: 100
-      timeout: 3600
-    training:
-      cv_strategy: walk_forward
-      metric: f1
-
-  # ---------- TARGET 9: Fastest Lap ----------
-  fastest_lap_classifier:
-    type: xgboost_classifier
-    target: has_fastest_lap
-    input_features:
-      - driver_elo
-      - constructor_elo
-      - qualifying_position
-      - recent_form_5
-      - lap_consistency
-      - tyre_compound_at_end
-      - circuit_overtaking_difficulty
-    hyperparameters:
-      max_depth: 4
-      learning_rate: 0.08
-      n_estimators: 300
-    optuna:
-      n_trials: 100
-      timeout: 3600
-    training:
-      cv_strategy: walk_forward
-      metric: log_loss
+  mlflow:
+    experiment_name: Formula1-AI
+    tracking_uri: mlruns
+    log_models: true
+    log_artifacts: true

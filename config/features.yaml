@@ -1,27 +1,45 @@
 # Formula1-AI — Feature Engineering Configuration
-# =================================================
+# config/features.yaml
 
-rolling_windows: [3, 5, 10]
-elo:
-  default_rating: 1500.0
-  k_rookie: 40.0
-  k_standard: 20.0
-  k_veteran: 10.0
-  rookie_threshold: 40     # races
-  veteran_threshold: 100   # races
+features:
+  rolling_windows: [3, 5, 10]
+  elo:
+    default: 1500.0
+    k_factor: 32.0
 
-tyre:
-  min_laps_for_degradation: 3
-  degradation_compounds: [SOFT, MEDIUM, HARD]
-
-weather:
-  knn_neighbors: 5
-  rainfall_threshold_mm: 0.1   # Rain flag trigger
-
-temporal:
-  cyclical_features: [race_round, day_of_week, month]
-  season_progress_feature: true
-
-feature_store:
-  cache_dir: data/processed/features
-  version: "v1.0"
+  engineering:
+    - roll_pos_3
+    - roll_pos_5
+    - roll_pos_10
+    - roll_quali_3
+    - roll_quali_5
+    - roll_pts_3
+    - roll_pts_5
+    - roll_dnf_5
+    - roll_win_5
+    - roll_podium_5
+    - elo_rating
+    - constructor_momentum
+    - lap_consistency
+    - roll_pit_dur_5
+    - avg_pit_duration
+    - pit_count
+    - career_races
+    - career_wins
+    - career_podiums
+    - career_dnfs
+    - pole_conversion
+    - podium_conversion
+    - is_street
+    - is_night
+    - circuit_familiarity
+    - championship_gap
+    - championship_pressure
+    - races_remaining
+    - cumulative_points
+    - champ_pos
+    - grid_position
+    - quali_pos
+    - constructor_code
+    - circuit_code
+    - driver_code

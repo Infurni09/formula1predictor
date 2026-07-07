@@ -1,0 +1,35 @@
+# Formula1-AI — Simulation Configuration
+# config/simulation_config.yaml
+
+simulation:
+  race_simulator:
+    n_simulations: 5000
+    lap_limit: 78
+    tire_compounds: [SOFT, MEDIUM, HARD, INTERMEDIATE, WET]
+    dnf_base_rate: 0.04
+    safety_car_rate:
+      street: 0.22
+      night: 0.15
+      permanent: 0.12
+
+  season_simulator:
+    n_simulations: 10000
+    points_system: [25, 18, 15, 12, 10, 8, 6, 4, 2, 1]
+    fastest_lap_bonus: 1
+    sprint_points: [8, 7, 6, 5, 4, 3, 2, 1]
+
+  monte_carlo:
+    seed: 42
+    stochastic:
+      safety_car_probability: 0.15
+      weather_change_probability: 0.10
+      pit_stop_variance_seconds: 1.8
+      dnf_variance: 0.02
+
+  elo:
+    default_rating: 1500.0
+    k_factor_rookie: 40.0
+    k_factor_standard: 32.0
+    k_factor_veteran: 24.0
+    rookie_threshold_races: 30
+    veteran_threshold_races: 150
