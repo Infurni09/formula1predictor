@@ -16,7 +16,7 @@
 
 ## 🚀 What This Does
 
-Formula1-AI predicts, simulates, and explains Formula One outcomes using real historical race data from 2018–2024.
+Formula1-AI predicts, simulates, and explains Formula One outcomes using real historical race data (2018–2024).
 
 | Capability | Detail |
 |---|---|
@@ -56,8 +56,8 @@ formula1predictor/
 ├── dashboards/
 │   └── app.py          # Dash 4-view dashboard
 ├── config/
-│   ├── models.yaml     # ML model configuration
-│   ├── etl.yaml        # Data pipeline config
+│   ├── models.yaml
+│   ├── etl.yaml
 │   ├── simulation_config.yaml
 │   └── forecasting_config.yaml
 ├── tests/
@@ -65,7 +65,6 @@ formula1predictor/
 │   ├── test_models.py
 │   └── test_api.py
 ├── scripts/
-│   ├── push_to_github.py
 │   └── train_pipeline.sh
 ├── data/               # DuckDB + raw/processed data
 ├── models/             # Trained .joblib model files
@@ -73,7 +72,7 @@ formula1predictor/
 ├── docker-compose.yml
 ├── requirements.txt
 ├── environment.yml
-├── pyproject.toml      # black + ruff config
+├── pyproject.toml
 └── pytest.ini
 ```
 
@@ -108,9 +107,9 @@ python dashboards/app.py
 
 ```bash
 docker-compose up
-# API: http://localhost:8000/docs
+# API:       http://localhost:8000/docs
 # Dashboard: http://localhost:8050
-# MLflow: http://localhost:5000
+# MLflow:    http://localhost:5000
 ```
 
 ---
