@@ -1,0 +1,27 @@
+# Formula1-AI — Feature Engineering Configuration
+# =================================================
+
+rolling_windows: [3, 5, 10]
+elo:
+  default_rating: 1500.0
+  k_rookie: 40.0
+  k_standard: 20.0
+  k_veteran: 10.0
+  rookie_threshold: 40     # races
+  veteran_threshold: 100   # races
+
+tyre:
+  min_laps_for_degradation: 3
+  degradation_compounds: [SOFT, MEDIUM, HARD]
+
+weather:
+  knn_neighbors: 5
+  rainfall_threshold_mm: 0.1   # Rain flag trigger
+
+temporal:
+  cyclical_features: [race_round, day_of_week, month]
+  season_progress_feature: true
+
+feature_store:
+  cache_dir: data/processed/features
+  version: "v1.0"

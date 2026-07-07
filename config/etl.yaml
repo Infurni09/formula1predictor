@@ -1,0 +1,97 @@
+# Formula1-AI — ETL Configuration
+# ==================================
+# Data source settings, pipeline schedules, and database config.
+
+database:
+  type: duckdb
+  path: data/formula1_ai.duckdb
+  memory_limit: "4GB"
+  threads: 4
+
+data_sources:
+  ergast:
+    enabled: true
+    base_url: "https://ergast.com/api/f1"
+    rate_limit_calls: 4
+    rate_limit_period: 1.0
+    timeout_seconds: 30
+    retry_attempts: 3
+    retry_backoff: 2.0
+    seasons:
+      start: 2000
+      end: 2024
+    endpoints:
+      races: "/{season}.json?limit=100"
+      results: "/{season}/{round}/results.json"
+      qualifying: "/{season}/{round}/qualifying.json"
+      drivers: "/drivers.json?limit=1000"
+      constructors: "/constructors.json?limit=500"
+      standings_drivers: "/{season}/driverStandings.json"
+      standings_constructors: "/{season}/constructorStandings.json"
+      pit_stops: "/{season}/{round}/pitstops.json"
+      circuits: "/circuits.json?limit=500"
+      lap_times: "/{season}/{round}/laps/{lap}.json"
+      sprint: "/{season}/{round}/sprint.json"
+
+  fastf1:
+    enabled: true
+    cache_dir: "data/raw/fastf1_cache"
+    telemetry_resample_freq: "200ms"
+    sessions:
+      - Q     # Qualifying
+      - R     # Race
+      - FP1
+      - FP2
+      - FP3
+      - S     # Sprint
+    seasons:
+      start: 2018     # FastF1 has good coverage from 2018
+      end: 2024
+
+  openf1:
+    enabled: false    # Enable for real-time during race weekends
+    base_url: "https://api.openf1.org/v1"
+    timeout_seconds: 30
+
+pipelines:
+  ingest_race_results:
+    source: ergast
+    target_table: results
+    schedule: "0 * * * *"
+    retention_days: 3650   # 10 years
+
+  ingest_qualifying:
+    source: ergast
+    target_table: qualifying
+    schedule: "0 * * * *"
+    retention_days: 3650
+
+  ingest_pit_stops:
+    source: ergast
+    target_table: pit_stops
+    schedule: "0 * * * *"
+    retention_days: 3650
+
+  ingest_telemetry:
+    source: fastf1
+    target_table: telemetry
+    schedule: "*/5 * * * *"
+    retention_days: 730
+
+  engineer_features:
+    depends_on: [ingest_race_results, ingest_qualifying, ingest_pit_stops]
+    target_table: engineered_features
+    schedule: "0 2 * * *"
+    feature_version: "v1.0"
+    processors:
+      - race_features
+      - driver_features
+      - team_features
+      - temporal_features
+      - elo_features
+      - weather_features
+
+cache:
+  format: parquet
+  compression: snappy
+  max_age_hours: 24

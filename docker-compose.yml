@@ -1,0 +1,17 @@
+version: "3.9"
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+  dashboard:
+    build: .
+    command: python dashboards/app.py
+    ports:
+      - "8050:8050"
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
